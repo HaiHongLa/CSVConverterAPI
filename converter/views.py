@@ -9,6 +9,30 @@ import re
 from django.conf import settings
 from rest_framework import status, serializers
 import mimetypes
+import datetime
+from datetime import timedelta
+from pathlib import Path
+
+def should_delete(filename):
+    path = Path(filename).stem
+    dt_str = path[-20:-10]
+    target_dt = datetime.datetime.today() - timedelta(hours = 2)
+    dt = datetime.datetime(int(dt_str[:4]), int(dt_str[4:6]), int(dt_str[6:8]), int(dt_str[8:]))
+    return dt < target_dt
+
+@api_view(['POST',])
+def clean_storage(request):
+    files = os.listdir("./media")
+    if len(files) == 0: return JsonResponse({"msg": "Storage is clear"}, status=status.HTTP_200_OK)
+    deleted_files = list()
+    try:
+        for path in files:
+            if should_delete(path):
+                deleted_files.append(path)
+                os.remove(os.path.join("media", path))
+    except Exception as e:
+        return JsonResponse({"msg": str(e)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    return JsonResponse({"msg": "Deleting done", "deleted_files": deleted_files}, status=status.HTTP_200_OK)
 
 @api_view(['GET',])
 def download_file(request, filename):
