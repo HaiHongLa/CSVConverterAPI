@@ -9,7 +9,7 @@ import re
 from django.conf import settings
 from rest_framework import status, serializers
 import mimetypes
-import datetime
+
 from datetime import timedelta
 from pathlib import Path
 
@@ -54,7 +54,7 @@ def convert_csv(request, output_format):
         try:
             data = pd.read_csv(f)
         except:
-            raise Exception("Unable to convert file")
+            raise Exception("An error occurred when reading file")
 
         # for html output
         if output_format == "html":
@@ -92,7 +92,12 @@ def convert_csv(request, output_format):
             # check if column name starts with a number
             for column_name in data.columns:
                 if column_name[0].isdigit():
-                    data.rename(columns = {column_name: "".join(re.findall('[0-9A-Za-z\'_.]+', ('_' + column_name).replace(" ", "_") ) ) }, inplace = True)
+                    # data.rename(columns = {column_name: "".join(re.findall('^[a-zA-Z0-9_]+$', ('_' + column_name).replace(" ", "_") ) ) }, inplace = True)
+                    data.rename(columns = {str(column_name): "_" + column_name})
+                    
+            # clean column names
+            for column_name in data.columns:
+                data.rename(columns = {str(column_name) : str(re.sub('[^A-Za-z0-9_ ]+', '', str(column_name))).replace(" ", "_")}, inplace = True)
 
             filename = f.name[:-4] + "_" + "".join(re.findall('[0-9]+', str(datetime.now()))) + ".xml"
             filepath = os.path.join("media/", filename)
@@ -103,6 +108,6 @@ def convert_csv(request, output_format):
 
     except Exception as e:
         print(e)
-        return JsonResponse({"msg": str(e) }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JsonResponse({"msg": "An error occured while converting file" }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     return JsonResponse({"msg": "Converting unsuccessful"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
