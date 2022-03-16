@@ -16,15 +16,16 @@ from pathlib import Path
 def should_delete(filename):
     path = Path(filename).stem
     dt_str = path[-20:-10]
-    target_dt = datetime.datetime.today() - timedelta(hours = 2)
+    target_dt = datetime.datetime.today() - timedelta(hours = 2) # check for all files created 2 hours ago
     dt = datetime.datetime(int(dt_str[:4]), int(dt_str[4:6]), int(dt_str[6:8]), int(dt_str[8:]))
     return dt < target_dt
 
 @api_view(['POST',])
 def clean_storage(request):
-    files = os.listdir("./media")
+    files = os.listdir("./media") # find all files in the media folder
     if len(files) == 0: return JsonResponse({"msg": "Storage is clear"}, status=status.HTTP_200_OK)
-    deleted_files = list()
+
+    deleted_files = list() # store the results
     try:
         for path in files:
             if should_delete(path):
@@ -32,6 +33,7 @@ def clean_storage(request):
                 os.remove(os.path.join("media", path))
     except Exception as e:
         return JsonResponse({"msg": str(e)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
     return JsonResponse({"msg": "Deleting done", "deleted_files": deleted_files}, status=status.HTTP_200_OK)
 
 @api_view(['GET',])
@@ -45,7 +47,9 @@ def download_file(request, filename):
 
 @api_view(["POST",])
 def convert_csv(request, output_format):
+
     allowed_outputs = {"html", "xlsx", "json", "xml", "pkl", "txt"}
+
     if output_format not in allowed_outputs:
         return JsonResponse({"msg": "Output format not allowed"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
@@ -54,7 +58,7 @@ def convert_csv(request, output_format):
         try:
             data = pd.read_csv(f)
         except:
-            raise Exception("An error occurred when reading file")
+            raise ValueError("An error occurred when reading file, please make sure csv file only contains tabular data")
 
         # for html output
         if output_format == "html":
@@ -94,7 +98,7 @@ def convert_csv(request, output_format):
                 if column_name[0].isdigit():
                     # data.rename(columns = {column_name: "".join(re.findall('^[a-zA-Z0-9_]+$', ('_' + column_name).replace(" ", "_") ) ) }, inplace = True)
                     data.rename(columns = {str(column_name): "_" + column_name})
-                    
+
             # clean column names
             for column_name in data.columns:
                 data.rename(columns = {str(column_name) : str(re.sub('[^A-Za-z0-9_ ]+', '', str(column_name))).replace(" ", "_")}, inplace = True)
@@ -105,6 +109,9 @@ def convert_csv(request, output_format):
             data.to_xml(filepath)
 
         return JsonResponse({"msg": "Convert done", "filename": filename}, status=status.HTTP_200_OK)
+
+    except ValueError as val_err:
+        return JsonResponse({"msg": str(val_err) }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     except Exception as e:
         print(e)
