@@ -16,7 +16,6 @@ from pathlib import Path
 import datetime
 
 import boto3
-import io
 
 
 def should_delete(filename):
@@ -47,6 +46,7 @@ def clean_storage(request):
             if should_delete(path):
                 deleted_files.append(path)
                 s3_client.delete_object(Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key=path)
+                File.objects.get(filename=path).delete()
     except Exception as e:
         return JsonResponse({"msg": str(e)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
@@ -110,7 +110,6 @@ def convert_csv(request, output_format):
             # check if column name starts with a number
             for column_name in data.columns:
                 if column_name[0].isdigit():
-                    # data.rename(columns = {column_name: "".join(re.findall('^[a-zA-Z0-9_]+$', ('_' + column_name).replace(" ", "_") ) ) }, inplace = True)
                     data.rename(columns = {str(column_name): "_" + column_name})
 
             # clean column names
