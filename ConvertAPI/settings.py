@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 """
 
 import os
+import credentials
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -21,7 +22,7 @@ MEDIA_DIR = os.path.join(BASE_DIR, "media")
 # See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '=10_s!8$ep!cks4mbl#8o0)731hdl2mj6*07w-=-$%6t7b2t%s'
+SECRET_KEY = credentials.SECRET_KEY
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -40,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
+    'converter',
 ]
 
 MIDDLEWARE = [
@@ -136,3 +138,9 @@ CORS_ALLOW_METHODS = [
     "POST",
     "PUT",
 ]
+
+DEFAULT_FILE_STORAGE = credentials.DEFAULT_FILE_STORAGE
+AWS_ACCESS_KEY_ID = credentials.AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY = credentials.AWS_SECRET_ACCESS_KEY
+AWS_STORAGE_BUCKET_NAME = credentials.AWS_STORAGE_BUCKET_NAME
+AWS_QUERYSTRING_AUTH = False
