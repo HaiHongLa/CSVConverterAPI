@@ -14,6 +14,9 @@ from converter.models import File
 from datetime import timedelta
 from pathlib import Path
 
+import boto3
+import io
+
 
 def should_delete(filename):
     path = Path(filename).stem
@@ -21,57 +24,6 @@ def should_delete(filename):
     target_dt = datetime.datetime.today() - timedelta(hours = 2) # check for all files created 2 hours ago
     dt = datetime.datetime(int(dt_str[:4]), int(dt_str[4:6]), int(dt_str[6:8]), int(dt_str[8:]))
     return dt < target_dt
-
-import boto3
-import io
-
-@api_view(['GET',])
-def test_storage(request):
-    # path = open(os.path.join(settings.BASE_DIR, 'media', "baseball_allstar.csv"))
-    # new_file = File(filename="baseball_allstar.csv", file_url=path)
-    # new_file.save()
-    df = pd.read_csv("media/baseball_allstar.csv")
-    # print(settings.AWS_STORAGE_BUCKET_NAME)
-    # df.to_csv("s3://{}/baseball_allstar_saved12313213.csv".format(settings.AWS_STORAGE_BUCKET_NAME), storage_options={
-    #     "key": settings.AWS_ACCESS_KEY_ID,
-    #     "secret": settings.AWS_SECRET_ACCESS_KEY,
-    #     "anon": False,
-    #     "token": ""
-    # })
-
-    s3_client = boto3.client(
-        "s3",
-        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
-    )
-
-    with io.StringIO() as csv_buffer:
-        print(type(csv_buffer.getvalue()))
-        df.to_excel("media/baseball_allstar.xlsx")
-
-        response = s3_client.put_object(
-            Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key="baseball_allstars_saved.xlsx", Body=open("media/baseball_allstar.xlsx", "rb")
-        )
-
-        os.remove("media/baseball_allstar.xlsx")
-
-        status = response.get("ResponseMetadata", {}).get("HTTPStatusCode")
-
-        if status == 200:
-            print(f"Successful S3 put_object response. Status - {status}")
-        else:
-            print(f"Unsuccessful S3 put_object response. Status - {status}")
-
-    # s3 = s3fs.S3FileSystem(anon=True)
-
-    # # Use 'w' for py3, 'wb' for py2
-    # with s3.open('{}/baseball_allstar_saveed.csv'.format(settings.AWS_STORAGE_BUCKET_NAME),'w') as f:
-    #     df.to_csv(f, storage_options={
-    #     "key": settings.AWS_ACCESS_KEY_ID,
-    #     "secret": settings.AWS_SECRET_ACCESS_KEY
-    # })
-
-    return JsonResponse({"msg": "saving done"})
 
 @api_view(['POST',])
 def clean_storage(request):
